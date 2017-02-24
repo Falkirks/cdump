@@ -24,7 +24,9 @@
             <b ng-bind="item.title"></b>: <span ng-bind="item.value"></span>
           </li>
         </ul>
-        <div ng-show="dataItem.isChart" id="{{ dataItem.id }}"></div>
+        <canvas ng-show="dataItem.isChart" id="dataItem.chartId" class="chart-base" chart-type="dataItem.chartType"
+                chart-data="dataItem.chartData" chart-labels="dataItem.chartLabels" chart-options="dataItem.chartOptions" chart-dataset-override="dataItem.chartOverride">
+        </canvas>
       </div>
     </div>
   </div>

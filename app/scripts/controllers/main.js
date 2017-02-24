@@ -36,10 +36,12 @@ angular.module('cdumpApp')
           var totalMoneySpent = 0;
           var totalTransactions = 0;
           var start = moment(data[0]['DateTime']);
+          var times = [];
           var last;
           var duration;
           var transactionsByType = {};
           var transactionsByLocation = {};
+          var transactionByRoute = {};
 
           for(var i = 0; i < data.length; i++){
             //UPDATE TRACKERS
@@ -48,6 +50,8 @@ angular.module('cdumpApp')
               totalMoneySpent += data[i]['Amount'];
               totalTransactions++;
               last = data[i]['DateTime'];
+
+              times.push(moment(data[i]['DateTime']));
 
               // PARSE TRANSACTION STRING
               if(data[i]['Transaction'].indexOf(' at ') >= 0){
@@ -59,14 +63,19 @@ angular.module('cdumpApp')
 
                 var location = data[i]['Transaction'].split(' at ')[1].replace('Bus Stop', '').trim();
 
-                if(location == 'W'){
-                  console.log(data[i]['Transaction']);
-                }
-
                 if(transactionsByLocation[location] == null){
                   transactionsByLocation[location] = 0;
                 }
                 transactionsByLocation[location]++;
+              }
+
+              if(type !== "Loaded") {
+                var route = data[i]['Location'];
+
+                if (transactionByRoute[route] == null) {
+                  transactionByRoute[route] = 0;
+                }
+                transactionByRoute[route]++;
               }
 
             }
@@ -189,9 +198,89 @@ angular.module('cdumpApp')
             });
           }
 
+          var busAmounts = [];
+          var busNames = [];
+
+          var routeAmounts = [];
+          var routeNames = [];
+
+          for(var routeName in transactionByRoute){
+            if(transactionByRoute.hasOwnProperty(routeName)){
+              var index = routeName.indexOf('-');
+              if(index != -1 && index <= 5 && !isNaN(routeName.split('-')[0])) {
+                busNames.push(routeName);
+                busAmounts.push(transactionByRoute[routeName]);
+              }
+              else{
+                routeNames.push(routeName);
+                routeAmounts.push(transactionByRoute[routeName]);
+              }
+            }
+          }
+
+          $scope.parsedData.push({
+            title: "Transactions by bus route",
+            desc: '',
+            isChart: true,
+            chartType: 'pie',
+            chartData: busAmounts,
+            chartLabels: busNames
+          });
+
+          $scope.parsedData.push({
+            title: "Transactions by station",
+            desc: '',
+            isChart: true,
+            chartType: 'pie',
+            chartData: routeAmounts,
+            chartLabels: routeNames
+          });
+
+          var timedata = [];
+          for(i = 0; i < times.length; i++){
+            var found = false;
+            for(var j = 0; j < timedata.length; j++){
+              if(timedata[j].x == times[i].format('MMM YYYY')){
+                timedata[j].y++;
+                found = true;
+                break;
+              }
+            }
+            if(!found){
+              timedata.push({
+                x: times[i].format('MMM YYYY'),
+                y: 1
+              });
+            }
+          }
+          $scope.parsedData.push({
+            title: "Transactions per month",
+            desc: '',
+            isChart: true,
+            chartType: 'line',
+            chartData: [timedata],
+            chartOptions: {
+              scales: {
+                xAxes: [{
+                  type: 'time',
+                  time: {
+                    unit: 'month'
+                  }
+                }]
+              }
+            },
+            chartOverride: [{
+              fill: false,
+              label: "Transactions",
+              lineTension: 0
+            }]
+          });
           $scope.showSpinner = false;
           $scope.parserHasRun = true;
-          $scope.$apply()
+          $scope.$apply();
+
+
+
         }
       });
     };
